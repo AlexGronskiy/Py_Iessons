@@ -28,13 +28,13 @@ N = int(input("Введите число:"))
 for i in range(1, N + 1):
     S = str(i)
     S_print += str(S)
-    S_R = S_print[1:N-1]
+    S_R = S_print[0:i-1]
     S_R = ''.join(reversed(S_R))
     print(S_print + S_R)
 for j in range(1, N + 1):
     SS = str(j)
     SS_print += str(SS)
-    SS_R = SS_print[1:N-1]
+    SS_R = SS_print[0:j-1]
     SS_R = ''.join(reversed(SS_R))
     print("{:>20}".format(SS_print + SS_R))
 
