@@ -26,8 +26,6 @@ lst1 = list(map(int, input('Введите целочисленные значе
 lst2 = list(map(int, input('Введите целочисленные значения 2-го списка через пробел:').split()))
 lst1.sort()
 lst2.sort()
-lst1 = list(map(int, input('Введите целочисленные значения 1-го списка через пробел:').split()))
-lst2 = list(map(int, input('Введите целочисленные значения 2-го списка через пробел:').split()))
 lst = []
 for i in lst1:
     while lst1.count(i) > 1:
