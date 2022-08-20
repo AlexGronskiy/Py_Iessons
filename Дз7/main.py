@@ -26,18 +26,24 @@ lst1 = list(map(int, input('Введите целочисленные значе
 lst2 = list(map(int, input('Введите целочисленные значения 2-го списка через пробел:').split()))
 lst1.sort()
 lst2.sort()
+lst1 = list(map(int, input('Введите целочисленные значения 1-го списка через пробел:').split()))
+lst2 = list(map(int, input('Введите целочисленные значения 2-го списка через пробел:').split()))
+lst = []
 for i in lst1:
     while lst1.count(i) > 1:
         lst1.remove(i)
-print(lst1)
 for i in lst2:
     while lst2.count(i) > 1:
         lst2.remove(i)
-print(lst2)
-lst = lst1 + lst2
-for i in lst:
-    while lst.count(i) > 1:
-        lst.remove(i)
+lst1.sort()
+lst2.sort()
+for i in lst1:
+    if i not in lst2:
+        lst.append(i)
+        continue
+    for j in lst2:
+        if j not in lst1:
+            lst.append(j)
 lst.sort()
 print(lst)
-print(len(lst))
+print("В этих строках столько не пересекающихся символов:", len(lst))
