@@ -2,51 +2,50 @@ import random
 
 print("Задание 1")
 n = int(input("Введите N для квадратной матрицы:"))
-a = []
+a = [[i if i % 2 == 0 else (-n + j) for j in range(n)] for i in range(n)]
 for i in range(n):
-    a.append([0] * n)
-for i in range(n):
-    t = n
-    for j in range(n):
-        if i % 2 != 0:
-            a[i][j] = -t
-            t -= 1
-        else:
-            a[i][j] = i
-        print((int(a[i][j])),
-              end=" " if j < n - 1 else '\n')
+    print(a[i])
 
 print("Задание 2")
 n = int(input("Введите N для квадратной матрицы:"))
-a = []
 d_sum = 0
 n_sum = 0
+Matrix = [[random.randint(1, 11) for j in range(n)] for i in range(n)]
+d_sum = [
+    d_sum + Matrix[i][j]
+    for j in range(n)
+    for i in range(n)
+    if i == j
+]
+n_sum = [
+    n_sum + Matrix[i][j]
+    for j in range(n)
+    for i in range(n)
+    if j == n - 1
+
+]
+print('Matrix:')
 for i in range(n):
-    a.append([0] * n)
-for i in range(n):
-    for j in range(n):
-        a[i][j] = random.randint(-5, 5)
-        if i == j:
-            d_sum += a[i][j]
-        n_sum += a[i][n-1]
-        print((int(a[i][j])),
-              end=" " if j < n - 1 else '\n')
-print("Сумма диагональных элементов:", d_sum)
-print("Сумма последних элементов строк:", n_sum)
+    print(Matrix[i])
+print("Сумма диагональных элементов:", sum(d_sum))
+print("Сумма последних элементов строк:", sum(n_sum))
 
 print("Задание 3")
-lst = []
+lst = [random.randint(-5, 5) for i in range(5)]
 sum_p = 0
 sum_np = 0
-for i in range(15):
-    lst.append(15)
-    lst[i] = random.randint(-5, 5)
-    if lst[i] % 2 == 0:
-        sum_p += lst[i]
-    else:
-        sum_np += lst[i]
+sum_p = [
+    sum_p + i
+    for i in lst
+    if i % 2 == 0
+]
+sum_np = [
+    sum_np + i
+    for i in lst
+    if i % 2 != 0
+]
 print(lst)
-if sum_np > sum_p:
-    print("Да")
+if sum(sum_np) > sum(sum_p):
+    print(sum_np, '\n', "Да", sum(sum_np))
 else:
-    print("Нет")
+    print(sum_p, '\n', "Нет", sum(sum_p))
