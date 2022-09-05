@@ -1,5 +1,4 @@
 import random
-import math
 print("Задание 1")
 n = int(input("Введите длину строки:"))
 k = int(input("Введите число(эквивалент суммы):"))
@@ -28,13 +27,29 @@ print(x_lst)
 print(list(lst), "\n")
 
 print("Задание 3")
-prime = [2] + [num for num in range(3, 101, 2) if all(num % i != 0 for i in range(2, int(math.sqrt(num))+1))]
+# prime = [2] + [num for num in range(3, 101, 2) if all(num % i != 0 for i in range(2, int(math.sqrt(num))+1))]
 # for num in range(2, 101):
 #     if all(num % i != 0 for i in range(2, int(math.sqrt(num))+1)):
-for i in prime:
-    print(i, end=' ')
-print()
 
+
+def primes(l):
+    if l > 1:
+        primes_found = [(2, 4)]
+        yield 2
+        for j in range(3, l, 2):
+            for p, ps in primes_found:
+                if ps > j:
+                    primes_found.append((j, j * j))
+                    yield j
+                    break
+                else:
+                    if not j % p:
+                        break
+
+
+for i in primes(101):
+    print(i, end=' ')
+print("\n")
 
 print("Задание 4")
 
