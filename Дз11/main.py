@@ -28,10 +28,13 @@ print(x_lst)
 print(list(lst), "\n")
 
 print("Задание 3")
-for num in range(2, 101):
-    if all(num % i != 0 for i in range(2, int(math.sqrt(num))+1)):
-        print(num, end=' ')
-print("\n")
+prime = [2] + [num for num in range(3, 101, 2) if all(num % i != 0 for i in range(2, int(math.sqrt(num))+1))]
+# for num in range(2, 101):
+#     if all(num % i != 0 for i in range(2, int(math.sqrt(num))+1)):
+for i in prime:
+    print(i, end=' ')
+print()
+
 
 print("Задание 4")
 
