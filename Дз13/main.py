@@ -6,9 +6,9 @@ Matrix = [[random.randint(1, 50) for j in range(n)] for i in range(m)]
 print('Matrix:')
 
 
-def sums(l):
+def sums(line):
     sum_l = 0
-    for i in l:
+    for i in line:
         sum_l += i
     return sum_l
 
