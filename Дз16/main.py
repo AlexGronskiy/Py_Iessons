@@ -9,6 +9,8 @@ class FieldPart(object):
     weight = 'weight'
 
 
+# здесь просто задаем цвета. Они не соответствуют своим названиям, но главное всё сгруппировано в одном месте
+# при желании цвета можно легко поменять не колупаясь во всей логике приложения
 class Color:
     yellow2 = '\033[1;35m'
     reset = '\033[0m'
@@ -19,9 +21,15 @@ class Color:
 
 
 def set_color(text, color):
+    """
+    функция set_color окрашивает текст в заданный цвет.
+    """
     return color + text + Color.reset
 
 
+# класс "клетка". Здесь мы задаем и визуальное отображение клеток и их цвет.
+# по визуальному отображению мы проверяем какого типа клетка. Уж такая реализация.
+# По этой причине нельзя обозначать одним символом два разных типа. Иначе в логике возникнет путаница.
 class Cell(object):
     empty_cell = set_color(' ', Color.yellow2)
     ship_cell = set_color('■', Color.blue)
@@ -30,14 +38,24 @@ class Cell(object):
     miss_cell = set_color('•', Color.miss)
 
 
+# поле игры. состоит из трех частей: карта где расставлены корабли игрока.
+# радар на котором игрок отмечает свои ходы и результаты
+# поле с весом клеток. используется для ходов ИИ
 class Field(object):
+
     def __init__(self, size):
+        """
+        Функция - конструктор
+        """
         self.size = size
         self.map = [[Cell.empty_cell for _ in range(size)] for _ in range(size)]
         self.radar = [[Cell.empty_cell for _ in range(size)] for _ in range(size)]
         self.weight = [[1 for _ in range(size)] for _ in range(size)]
 
     def get_field_part(self, element):
+        """
+        Функция get_field_part возврощает значения.
+        """
         if element == FieldPart.main:
             return self.map
         if element == FieldPart.radar:
@@ -46,8 +64,13 @@ class Field(object):
             return self.weight
 
     def draw_field(self, element):
+        """
+        функция draw_field Рисует поле,
+        а так же отрисовует вес клеток.
+        """
         field = self.get_field_part(element)
         weights = self.get_max_weight_cells()
+        # Тут рисуется вес поля(удобно использовать при отладке)
         if element == FieldPart.weight:
             for x in range(self.size):
                 for y in range(self.size):
@@ -58,14 +81,20 @@ class Field(object):
                     if field[x][y] == 0:
                         print(str("" + ". " + ""), end='')
                     else:
-                        print(str("" + str(field[x][y]) + " "), end='')
+                        print(str(
+                            "" +
+                            str(field[x][y]) +
+                            " "),
+                            end=''
+                        )
                     print('\033[0;0m', end='')
                 print()
         else:
+            # Тут рисуется поле
             for x in range(-1, self.size):
                 for y in range(-1, self.size):
                     if x == -1 and y == -1:
-                        print(" ", end="")
+                        print("  ", end="")
                         continue
                     if x == -1 and y >= 0:
                         print(y + 1, end=" ")
@@ -78,6 +107,14 @@ class Field(object):
         print("")
 
     def check_ship_fits(self, ship, element):
+        """
+        Функция check_ship_fits проверяет помещается ли корабль на
+        конкретную позицию конкретного поля.
+        будем использовать при расстановке кораблей,
+        а так же при вычислении веса клеток
+        возвращает False если не помещается и
+        True если корабль помещается
+        """
         field = self.get_field_part(element)
         if ship.x + ship.height - 1 >= self.size or ship.x < 0 or \
                 ship.y + ship.width - 1 >= self.size or ship.y < 0:
@@ -96,31 +133,59 @@ class Field(object):
                     continue
                 if str(field[p_x][p_y]) in (Cell.ship_cell, Cell.destroyed_ship):
                     return False
+
         return True
 
     def mark_destroyed_ship(self, ship, element):
+        """
+        Функция mark_destroyed_ship при уничтожении корабля меняет все клетки вокруг него сыграными (Cell.miss_cell)
+        а все клетки корабля - уничтожеными (Cell.destroyed_ship).
+        """
         field = self.get_field_part(element)
+
         x, y = ship.x, ship.y
         width, height = ship.width, ship.height
+
         for p_x in range(x - 1, x + height + 1):
             for p_y in range(y - 1, y + width + 1):
-                if p_x < 0 or p_x >= len(field) or p_y < 0 or p_y >= len(field):
+                if p_x < 0\
+                        or p_x >= len(field)\
+                        or p_y < 0\
+                        or p_y >= len(field):
                     continue
                 field[p_x][p_y] = Cell.miss_cell
+
         for p_x in range(x, x + height):
             for p_y in range(y, y + width):
                 field[p_x][p_y] = Cell.destroyed_ship
 
     def add_ship_to_field(self, ship, element):
+        """
+        Функция add_ship_to_field добавляет корабли:
+        пробегаемся от позиции х у корабля по его высоте и ширине,
+        и помечаем на поле эти клетки;
+        в параметр element передаем к какой части
+        поля мы обращаемся: основная, радар или вес
+        """
         field = self.get_field_part(element)
         x, y = ship.x, ship.y
         width, height = ship.width, ship.height
-
         for p_x in range(x, x + height):
             for p_y in range(y, y + width):
+                # заметьте в клетку мы записываем ссылку на корабль.
+                # таким образом обращаясь к клетке мы всегда можем получить текущее HP корабля
                 field[p_x][p_y] = ship
 
     def get_max_weight_cells(self):
+        """
+        Функция get_max_weight_cells возвращает список координат
+        с самым большим коэффициентом шанса попадения
+        просто пробегаем по всем клеткам и заносим их в
+        словарь с ключом который является значением в клетке
+        заодно запоминаем максимальное значение.
+        далее просто берём из словаря список координат с этим
+        максимальным значением weights[max_weight]
+        """
         weights = {}
         max_weight = 0
         for x in range(self.size):
@@ -128,10 +193,29 @@ class Field(object):
                 if self.weight[x][y] > max_weight:
                     max_weight = self.weight[x][y]
                 weights.setdefault(self.weight[x][y], []).append((x, y))
-
         return weights[max_weight]
 
     def recalculate_weight_map(self, available_ships):
+        """
+        Функция recalculate_weight_map делает пересчет веса клеток
+        Для начала мы выставляем всем клеткам 1.
+        нам не обязательно знать какой вес был у клетки в предыдущий раз:
+        эффект веса не накапливается от хода к ходу.
+
+        for x in range(self.size):
+        Пробегаем по всем полю.
+        Если находим раненый корабль - ставим клеткам выше ниже и по бокам
+        коэффициенты умноженые на 50 т.к. логично что корабль имеет продолжение в одну из сторон.
+        По диагоналям от раненой клетки ничего не может быть - туда вписываем нули
+
+        for ship_size in available_ships:
+        Перебираем все корабли оставшиеся у противника.
+        Это открытая инафа исходя из правил игры.  Проходим по каждой клетке поля.
+        Если там уничтоженый корабль, задамаженый или клетка с промахом -
+        ставим туда коэффициент 0. Больше делать нечего - переходим следующей клетке.
+        Иначе прикидываем может ли этот корабль с этой клетки начинаться в какую-либо сторону
+        и если он помещается прбавляем клетке коэф 1.
+        """
         self.weight = [[1 for _ in range(self.size)] for _ in range(self.size)]
         for x in range(self.size):
             for y in range(self.size):
@@ -153,14 +237,19 @@ class Field(object):
                         self.weight[x + 1][y] *= 50
                         if y + 1 < self.size:
                             self.weight[x + 1][y + 1] = 0
+
         for ship_size in available_ships:
             ship = Ship(ship_size, 1, 1, 0)
             for x in range(self.size):
                 for y in range(self.size):
-                    if self.radar[x][y] in (Cell.destroyed_ship, Cell.damaged_ship, Cell.miss_cell) \
+                    if self.radar[x][y] in (
+                            Cell.destroyed_ship,
+                            Cell.damaged_ship,
+                            Cell.miss_cell) \
                             or self.weight[x][y] == 0:
                         self.weight[x][y] = 0
                         continue
+                    # вот здесь ворочаем корабль и проверяем помещается ли он
                     for rotation in range(0, 4):
                         ship.set_position(x, y, rotation)
                         if self.check_ship_fits(ship, FieldPart.radar):
@@ -179,10 +268,20 @@ class Game(object):
         self.status = 'prepare'
 
     def start_game(self):
+        """
+        Функция start_game при старте игры назначат текущего и следующего игрока
+        """
         self.current_player = self.players[0]
         self.next_player = self.players[1]
 
+    # функция переключения статусов
     def status_check(self):
+        """
+        Функция status_check переключает статус
+        переключат с prepare на in game если в игру добавлено два игрока.
+        далее стартует игру
+        переключает в статус game over если у следующего игрока осталось 0 кораблей.
+        """
         if self.status == 'prepare' and len(self.players) >= 2:
             self.status = 'in game'
             self.start_game()
@@ -192,6 +291,13 @@ class Game(object):
             return True
 
     def add_player(self, player):
+        """
+        при добавлении игрока создаем для него поле
+        расставляем корабли
+        высчитываем вес для клеток поля (это нужно только для ИИ,
+        но в целом при расширении возможностей
+        игры можно будет например на основе этого давать подсказки игроку).
+        """
         player.field = Field(Game.field_size)
         player.enemy_ships = list(Game.ships_rules)
         self.ships_setup(player)
@@ -199,6 +305,30 @@ class Game(object):
         self.players.append(player)
 
     def ships_setup(self, player):
+        """
+        Функция ships_setup делает расстановку кораблей
+        по правилам заданным в классе Game
+        задаем количество попыток при выставлении кораблей случайным образом
+        нужно для того чтобы не попасть в бесконечный цикл когда для
+        последнего корабля остаётся очень мало места
+        создаем предварительно корабль-балванку просто нужного размера
+        дальше будет видно что мы присваиваем ему координаты которые ввел пользователь
+
+        если пользователь ввёл какую-то ерунду функция возвратит нули,
+        значит без вопросов делаем continue
+        фактически просто просим еще раз ввести координаты
+
+        если корабль помещается на заданной позиции - отлично.
+        добавляем игроку на поле корабль
+        также добавляем корабль в список кораблей игрока.
+        и переходим к следующему кораблю для расстановки
+
+        если корабль не поместился. пишем юзеру что позиция неправильная
+        и отнимаем попытку на расстановку
+
+        после заданного количества неудачных попыток - обнуляем карту игрока
+        убираем у него все корабли и начинаем расстановку по новой
+        """
         for ship_size in Game.ships_rules:
             retry_count = 30
             ship = Ship(ship_size, 0, 0, 0)
@@ -206,7 +336,9 @@ class Game(object):
                 Game.clear_screen()
                 if player.auto_ship_setup is not True:
                     player.field.draw_field(FieldPart.main)
-                    player.message.append('Куда поставить {} корабль: '.format(ship_size))
+                    player.message.append(
+                        'Куда поставить {} корабль: '.format(ship_size)
+                    )
                     for _ in player.message:
                         print(_)
                 else:
@@ -223,24 +355,44 @@ class Game(object):
                 player.message.append('Неправильная позиция!')
                 retry_count -= 1
                 if retry_count < 0:
-                    player.field.map = [[Cell.empty_cell for _ in range(Game.field_size)] for _ in
-                                        range(Game.field_size)]
+                    player.field.map = [[Cell.empty_cell
+                                         for _ in range(Game.field_size)]
+                                        for _ in range(Game.field_size)]
                     player.ships = []
                     self.ships_setup(player)
                     return True
 
     def draw(self):
+        """
+        Функция отрисовки.
+        """
         if not self.current_player.is_ai:
             self.current_player.field.draw_field(FieldPart.main)
             self.current_player.field.draw_field(FieldPart.radar)
+            # если интересно узнать вес клеток можно расскомментировать эту строку:
+            # self.current_player.field.draw_field(FieldPart.weight)
         for line in self.current_player.message:
             print(line)
 
     def switch_players(self):
+        """
+        Функция смены игрока
+        """
         self.current_player, self.next_player = self.next_player, self.current_player
 
     @staticmethod
     def clear_screen():
+        """
+        os.system - выполняет команду (строку) в подоболочке.
+        Это реализуется вызовом стандартной функции C system()и имеет те же ограничения.
+        Изменения в sys.stdin, и т.п. не отражаются на окружении выполняемой команды.
+        Если команда генерирует какой-либо вывод, он будет отправлен в стандартный поток
+        вывода интерпретатора. Стандарт C не определяет значение возвращаемого значения
+        функции C, поэтому возвращаемое значение функции Python зависит от системы.
+
+        os.name - имя импортируемого модуля, зависящего от операционной системы.
+        В настоящее время зарегистрированы следующие имена: 'posix', 'nt', 'java'.
+        """
         os.system('cls' if os.name == 'nt' else 'clear')
 
 
@@ -256,19 +408,30 @@ class Player(object):
         self.enemy_ships = []
         self.field = None
 
+    # Ход игрока. Это либо расстановка кораблей (input_type == "ship_setup")
+    # Либо совершения выстрела (input_type == "shot")
     def get_input(self, input_type):
+        """
+        Ход игрока. Это либо расстановка кораблей (input_type == "ship_setup")
+        Либо совершения выстрела (input_type == "shot")
+        """
         if input_type == "ship_setup":
             if self.is_ai or self.auto_ship_setup:
-                user_input = str(choice(Game.letters)) + str(randrange(0, self.field.size)) + choice(["H", "V"])
+                user_input = str(choice(Game.letters))\
+                             + str(randrange(0, self.field.size)) + choice(["H", "V"])
             else:
                 user_input = input().upper().replace(" ", "")
+
             if len(user_input) < 3:
                 return 0, 0, 0
             x, y, r = user_input[0], user_input[1:-1], user_input[-1]
-            if x not in Game.letters or not y.isdigit() or int(y) not in range(1, Game.field_size + 1) or \
-                    r not in ("H", "V"):
+
+            if x not in Game.letters or not y.isdigit() or int(y)\
+                    not in range(1, Game.field_size + 1)\
+                    or r not in ("H", "V"):
                 self.message.append('Приказ непонятен, ошибка формата данных')
                 return 0, 0, 0
+
             return Game.letters.index(x), int(y) - 1, 0 if r == 'H' else 1
         if input_type == "shot":
             if self.is_ai:
@@ -279,7 +442,8 @@ class Player(object):
             else:
                 user_input = input().upper().replace(" ", "")
                 x, y = user_input[0].upper(), user_input[1:]
-                if x not in Game.letters or not y.isdigit() or int(y) not in range(1, Game.field_size + 1):
+                if x not in Game.letters or not y.isdigit()\
+                        or int(y) not in range(1, Game.field_size + 1):
                     self.message.append('Приказ непонятен, ошибка формата данных')
                     return 500, 0
                 x = Game.letters.index(x)
@@ -287,6 +451,13 @@ class Player(object):
             return x, y
 
     def make_shot(self, target_player):
+        """
+        при совершении выстрела мы будем запрашивать ввод данных с типом shot
+        результат выстрела это то что целевой игрок ответит на наш ход
+        промазал, попал или убил (в случае убил возвращается корабль)
+
+        после совершения выстрела пересчитаем карту весов
+        """
         sx, sy = self.get_input('shot')
         if sx + sy == 500 or self.field.radar[sx][sy] != Cell.empty_cell:
             return 'retry'
@@ -301,9 +472,16 @@ class Player(object):
             self.enemy_ships.remove(destroyed_ship.size)
             shot_res = 'kill'
         self.field.recalculate_weight_map(self.enemy_ships)
+
         return shot_res
 
     def receive_shot(self, shot):
+        """
+        здесь игрок будет принимать выстрел
+        как и в жизни игрок должен отвечать (возвращать) результат выстрела
+        попал (return "get") промазал (return "miss") или убил корабль (тогда возвращаем целиком корабль)
+        так проще т.к. сразу знаем и координаты корабля и его длину
+        """
         sx, sy = shot
         if type(self.field.map[sx][sy]) == Ship:
             ship = self.field.map[sx][sy]
@@ -338,6 +516,9 @@ class Ship:
         self.set_rotation(r)
 
     def set_rotation(self, r):
+        """
+        Крутит кораблики
+        """
         self.rotation = r
         if self.rotation == 0:
             self.width = self.size
@@ -356,41 +537,75 @@ class Ship:
 
 
 if __name__ == '__main__':
-    players = [Player(name='Player_name', is_ai=False, auto_ship=True, skill=1),
-               Player(name='Bot', is_ai=True, auto_ship=True, skill=1)]
+
+    # здесь делаем список из двух игроков и задаем им основные параметры
+    players = [
+        Player(name='Player', is_ai=False, auto_ship=True, skill=1),
+        Player(name='Bot', is_ai=True, auto_ship=True, skill=1)
+               ]
+
+    # создаем саму игру и погнали в бесконечном цикле
     game = Game()
+
     while True:
+        # каждое начало хода проверяем статус и дальше уже действуем исходя из статуса игры
         game.status_check()
+
         if game.status == 'prepare':
             game.add_player(players.pop(0))
         if game.status == 'in game':
+            # в основной части игры мы очищаем экран добавляем сообщение для текущего игрока и отрисовываем игру
             Game.clear_screen()
             game.current_player.message.append("Ждём приказа: ")
             game.draw()
+            # очищаем список сообщений для игрока. В следующий ход он уже получит новый список сообщений
             game.current_player.message.clear()
+            # ждём результата выстрела на основе выстрела текущего игрока в следующего
             shot_result = game.current_player.make_shot(game.next_player)
+            # в зависимости от результата накидываем сообщений и текущему игроку и следующему
+            # ну и если промазал - передаем ход следующему игроку.
             if shot_result == 'miss':
-                game.next_player.message.append('На этот раз {}, промахнулся! '.format(game.current_player.name))
-                game.next_player.message.append('Ваш ход {}!'.format(game.next_player.name))
+                game.next_player.message.append(
+                    'На этот раз {}, промахнулся! '.format(game.current_player.name)
+                )
+                game.next_player.message.append(
+                    'Ваш ход {}!'.format(game.next_player.name)
+                )
                 game.switch_players()
                 continue
             elif shot_result == 'retry':
-                game.current_player.message.append('Попробуйте еще раз!')
+                game.current_player.message.append(
+                    'Попробуйте еще раз!'
+                )
                 continue
             elif shot_result == 'get':
-                game.current_player.message.append('Отличный выстрел, продолжайте!')
-                game.next_player.message.append('Наш корабль попал под обстрел!')
+                game.current_player.message.append(
+                    'Отличный выстрел, продолжайте!'
+                )
+                game.next_player.message.append(
+                    'Наш корабль попал под обстрел!'
+                )
                 continue
             elif shot_result == 'kill':
-                game.current_player.message.append('Корабль противника уничтожен!')
-                game.next_player.message.append('Плохие новости, наш корабль был уничтожен :(')
+                game.current_player.message.append(
+                    'Корабль противника уничтожен!'
+                )
+                game.next_player.message.append(
+                    'Плохие новости, наш корабль был уничтожен :('
+                )
                 continue
+
         if game.status == 'game over':
             Game.clear_screen()
             game.next_player.field.draw_field(FieldPart.main)
             game.current_player.field.draw_field(FieldPart.main)
-            print('Это был последний корабль {}'.format(game.next_player.name))
-            print('{} выиграл матч! Поздравления!'.format(game.current_player.name))
+            print(
+                'Это был последний корабль {}'.format(game.next_player.name)
+            )
+            print(
+                '{} выиграл матч! Поздравления!'.format(game.current_player.name)
+            )
             break
+
     print('Спасибо за игру!')
     input('')
